@@ -11,7 +11,8 @@ import UIKit
 class BusinessesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchControllerDelegate, UISearchBarDelegate {
 
     var businesses: [Business]!
-    
+    var filteredData: [Business]!
+    var searchActive: Bool = false
     var searchBar: UISearchBar!
     
     @IBOutlet weak var tableView: UITableView!
@@ -46,16 +47,18 @@ class BusinessesViewController: UIViewController, UITableViewDataSource, UITable
             }
         })
 
-/* Example of Yelp search with more search options specified
-        Business.searchWithTerm("Restaurants", sort: .Distance, categories: ["asianfusion", "burgers"], deals: true) { (businesses: [Business]!, error: NSError!) -> Void in
-            self.businesses = businesses
-            
-            for business in businesses {
-                print(business.name!)
-                print(business.address!)
-            }
-        }
-*/
+// Example of Yelp search with more search options specified
+//        Business.searchWithTerm("Restaurants", sort: .Distance, categories: ["asianfusion", "burgers"], deals: true) { (businesses: [Business]!, error: NSError!) -> Void in
+//            self.businesses = businesses
+//            
+//            for business in businesses {
+//                print(business.name!)
+//                print(business.address!)
+//            }
+//            
+//            self.tableView.reloadData()
+//        }
+
     }
 
     override func didReceiveMemoryWarning() {
@@ -64,19 +67,51 @@ class BusinessesViewController: UIViewController, UITableViewDataSource, UITable
     }
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if businesses != nil {
-            return businesses!.count
+        
+        if(searchActive) {
+            print("SEARCH IS ACTIVE")
+            return filteredData.count
         } else {
-            return 0
+            print("SEARCH IS NOT ACTIVE")
+            if businesses != nil {
+                return businesses!.count
+            } else {
+                return 0
+            }
         }
     }
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("BusinessCell", forIndexPath: indexPath) as! BusinessCell
         
-        cell.business = businesses[indexPath.row]
+        let data: [Business]!
+        
+        searchActive ? (data = filteredData) : (data = businesses)
+        
+        cell.business = data[indexPath.row]
         
         return cell
+    }
+    
+    func searchBar(searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        searchText.isEmpty ? ( filteredData = businesses ) : (
+            filteredData = businesses?.filter({ (dataItem: Business) -> Bool in
+                if dataItem.name!.rangeOfString(searchText, options: .CaseInsensitiveSearch) != nil {
+                    return true
+                } else {
+                    return false
+                }
+            })
+        )
+        
+        if(filteredData.count == 0){
+            searchActive = false;
+        } else {
+            searchActive = true;
+        }
+        
+        tableView.reloadData()
     }
     
     func searchBarTextDidBeginEditing(searchBar: UISearchBar) {
@@ -86,9 +121,11 @@ class BusinessesViewController: UIViewController, UITableViewDataSource, UITable
     
     func searchBarCancelButtonClicked(searchBar: UISearchBar) {
         print("SEARCH BAR END EDITING")
+        searchActive = false
         searchBar.showsCancelButton = false
         searchBar.text = ""
         searchBar.resignFirstResponder()
+        tableView.reloadData()
     }
 
     /*
